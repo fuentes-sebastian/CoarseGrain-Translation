@@ -5,6 +5,7 @@ Created on Tue Feb 10 03:32:49 2026
 
 @author: sebas_fu
 """
+
 # code to translate atoms ids from an .ipt or .top file,
 # using graph theory, to a CG beads dictionary
 
@@ -12,9 +13,13 @@ Created on Tue Feb 10 03:32:49 2026
 # however, they help keeping track on the atoms and their weight
 
 import networkx as nx
+import pprint
+import ast # to convert .txt to a list of dictionaries 
 
 # variables
-input_file='inputfile' #( .mol2, .itp or .top)
+input_file='input_file' #( .mol2, .itp or .top)
+
+# ________________________ Definitions ________________________ 
 
 # parsing of input file (either .itp or .top)
 def parse_atoms(line):
@@ -36,17 +41,28 @@ def bonds_prase(line):
             'a_j': int(bond[1])}
         return(bond_info)
 
-# parsing .mol2 files
+# parsing of .mol2 files
 weight_dict={'H':1, 'C':12, 'N':14, 'O':16, 'S':32} # needed because mol2 files dont have atoms weight
 
 def parse_atoms_mol2(line):
     atom=line.split()
+    element=atom[1][0]
+
+    if element not in weight_dict.keys():
+        warn=f'atom with id {int(atom[0])} has element {element} which is not in dictionay of weights, wheight = 0 applied'
+        print(warn)
+        warnings.append(warn)
+        weight=0
+    if element in weight_dict.keys():
+        weight=weight_dict[element]
+
     atom_info = {
         'id': int(atom[0]),
-        'element': atom[5][0],
+        'atom_name':atom[1],
+        'element': element,
         'res_id': int(atom[6]),
         'res_name': atom[7] if len(atom) > 6 else 'Unk',
-        'weight':weight_dict[atom[5][0]]}
+        'weight':weight}
     return(atom_info)
 
 def bonds_prase_mol2(line):
@@ -111,157 +127,22 @@ def create_graph(node_list, name_list, edge_list, weight_list):
         graph_ref.add_edge(n,-w) # adds atom mass as an edge between atom and its mass (we use neg value to avoid atom id matching with weight node)
     return(graph_ref, dict_ref)
 
-# residue dictionary
-ref_dict=[
-    {'res_name':'ALA','nodes':[1,2,3,4,5],
-     'names':['N','C','C','C','O'],
-     'weights':[14,12,12,12,16],
-     'edges':[(1,2),(2,3),(2,4),(4,5)]},
-    {'res_name':'ASP','nodes':[1,2,3,4,5,6,7,8],
-     'names':['N','C','C','O','C','C','O','O'],
-     'weights':[14,12,12,16,12,12,16,16],
-     'edges':[(1,2),(2,3),(2,5),(3,4),(5,6),(6,7),(6,8)]},
-    {'res_name':'ASN','nodes':[1,2,3,4,5,6,7,8],
-     'names':['N','C','C','C','N','O','C','O'],
-     'weights':[14,12,12,12,14,16,12,16],
-     'edges':[(1,2),(2,3),(2,7),(3,4),(4,5),(4,6),(7,8)]},
-    {'res_name':'ARG','nodes':[1,2,3,4,5,6,7,8,9,10,11],
-     'names':['N','C','C','O','C', 'C', 'C','N','C','N','N'],
-     'weights':[14,12,12,16,12,12,12,14,12,14,14],
-     'edges':[(1,2),(2,3),(2,5),(3,4),(5,6),(6,7),(7,8),(8,9),(9,10),(9,11)]},
-    {'res_name':'CYS','nodes':[1,2,3,4,5,6],
-     'names':['N','C','C','S','C','O'],
-     'weights':[14,12,12,32,12,16],
-     'edges':[(1,2),(2,3),(2,5),(3,4),(5,6)]},
-    {'res_name':'GLU','nodes':[1,2,3,4,5,6,7,8,9],
-     'names':['N','C','C','O','C','C','C','O','O'],
-     'weights':[14,12,12,16,12,12,12,16,16],
-     'edges':[(1, 2), (2, 3), (2, 5), (3, 4), (5, 6), (6, 7), (7, 8), (7, 9)]},
-    {'res_name':'GLN','nodes':[1,2,3,4,5,6,7,8,9],
-     'names':['N', 'C', 'C', 'C', 'C', 'N', 'O', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 12 , 14 , 16 , 12 , 16],
-     'edges':[(1, 2), (2, 3), (2, 8), (3, 4), (4, 5), (5, 6), (5, 7), (8, 9)]},
-    {'res_name':'GLY','nodes':[1,2,3,4],
-     'names':['N', 'C', 'C', 'O'],
-     'weights':[14, 12 , 12 , 16],
-     'edges':[(1, 2), (2, 3), (3, 4)]},
-    {'res_name':'HIS','nodes':[1,2,3,4,5,6,7,8,9,10],
-     'names':['N', 'C', 'C', 'C', 'C', 'N', 'C', 'N', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 12 , 14 , 12 , 14 , 12,  16],
-     'edges':[(1, 2), (2, 3), (2, 9), (3, 4), (4, 5), (5, 8), (4, 6), (6, 7), (7, 8), (9, 10)]},
-    {'res_name':'LEU','nodes':[1,2,3,4,5,6,7,8],
-     'names':['N', 'C', 'C', 'C', 'C', 'C', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 12 , 12 , 12 , 16],
-     'edges':[(1, 2), (2, 3), (2, 7), (3, 4), (4, 5), (4, 6), (7, 8)]},
-    {'res_name':'MET','nodes':[1,2,3,4,5,6,7,8],
-     'names':['N', 'C', 'C', 'C', 'S', 'C', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 32 , 12 , 12 , 16],
-     'edges':[(1, 2), (2, 3), (2, 7), (3, 4), (4, 5), (5, 6), (7, 8)]},
-    {'res_name':'PHE','nodes':[1,2,3,4,5,6,7,8,9,10,11],
-     'names':['N', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 12 , 12 , 12 , 12, 12 , 12 , 16 ],
-     'edges':[(1, 2), (2, 3), (2, 10), (3, 4), (4, 5), (4, 6), (6, 8), (5, 7), (8, 9), (7, 9), (10, 11)]},
-    {'res_name':'PRO','nodes':[1,2,3,4,5,6,7],
-     'names':['N', 'C', 'C', 'C', 'C', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 12 , 12 , 16 ],
-     'edges':[(1, 2), (1, 5), (2, 3), (2, 6), (3, 4), (4, 5), (6, 7)]},
-    {'res_name':'SER','nodes':[1,2,3,4,5,6,7,8,9,10,11], # includes hydrogen
-     'names':['N', 'C', 'C', 'O', 'C', 'O', 'H', 'H', 'H', 'H', 'H'],
-     'weights':[14, 12 , 12 , 16 , 12 , 16 , 1  , 1  , 1  , 1  , 1 ],
-     'edges':[(1, 2), (1, 9), (2, 3), (2, 5), (2, 10), (3, 4), (5, 6), (3, 7), (3, 8), (4, 11)]},
-    {'res_name':'THR','nodes':[1,2,3,4,5,6,7],
-     'names':['N', 'C', 'C', 'C', 'O', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 16 , 12 , 16],
-     'edges':[(1, 2), (2, 3), (2, 6), (3, 4), (3, 5), (6, 7)]},
-    {'res_name':'TRP','nodes':[1,2,3,4,5,6,7,8,9,10,11,12,13,14],
-     'names':['N', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'N', 'C', 'C', 'C', 'C', 'O'],
-     'weights':[14, 12 , 12 , 12 , 12 , 12 , 12, 12 , 14 , 12 , 12 , 12 , 12 , 16 ],
-     'edges':[(1, 2), (2, 3), (2, 13), (3, 4), (4, 6), (4, 5), (6, 8), (6, 7), 
-              (7, 9), (8, 11), (5, 9), (7, 10), (11, 12), (10, 12), (13, 14)]},
-    {'res_name':'ILE','nodes':[1,2,3,4,5,6,7,8],
-     'names':['N','C','C','C','C','C','C','O'],
-     'weights':[14,12,12,12,12,12,12,16],
-     'edges':[(1,2),(2,3),(2,7),(3,4),(3,5),(5,6),(7,8)]},
-    {'res_name':'VAL','nodes':[1,2,3,4,5,6,7],
-     'names':['N','C','C','O','C','C','C'],
-     'weights':[14,12,12,16,12,12,12,12],
-     'edges':[(1,2),(2,3),(2,5),(3,4),(5,6),(5,7)]},
-    {'res_name':'TYR','nodes':[1,2,3,4,5,6,7,8,9,10,11,12],
-     'names':['N','C','C','C','C', 'C', 'C','C','C','O','C','O'],
-     'weights':[14,12,12,12,12,12,12,12,12,16,12,16],
-     'edges':[(1,2),(2,3),(2,11),(3,4),(4,5),(4,6),(6,8),(5,7),(8,9),(7,9),(9,10),(11,12)]},
-    {'res_name':'LYS','nodes':[1,2,3,4,5,6,7,8,9],
-     'names':['N','C','C','O','C', 'C', 'C','C','N'],
-     'weights':[14,12,12,16,12,12,12,12,14],
-     'edges':[(1,2),(2,3),(2,5),(3,4),(5,6),(6,7),(7,8),(8,9)]}
-    ]
+# ________________________ open files ________________________ 
 
-CG_dict=[
-    {'res_name':'ALA',
-    'nodes':[[1,2,3,4],[5]],
-    'names':['SP2', 'TC3']},
-    {'res_name':'ASP',
-    'nodes':[[1,2,3,4],[5,6,7,8]],
-    'names':['P2', 'TC3']},
-    {'res_name':'ASN',
-    'nodes':[[1,2,7,8],[3,4,5,6]],
-    'names':['P2', 'SP5']},
-    {'res_name':'ARG',
-    'nodes':[[1,2,3,4],[5,6,7],[8,9,10,11]],
-    'names':['P2', 'SC3','SQ3p']},
-    {'res_name':'CYS',
-    'nodes':[[1,2,5,6],[3,4]],
-    'names':['P2', 'TC6']},
-    {'res_name':'GLU',
-    'nodes':[[1,2,3,4],[5,6,7,8,9]],
-    'names':['P2', 'Q5n']},
-    {'res_name':'GLN',
-    'nodes':[[1,2,8,9],[3,4,5,6,7]],
-    'names':['P2', 'P5']},
-    {'res_name':'GLY',
-    'nodes':[[1,2,3,4]],
-    'names':['SP1']},
-    {'res_name':'HIS',
-    'nodes':[[1,2,9,10],[3,4],[5,8],[6,7]],
-    'names':['P2', 'TC4', 'TN6d', 'TN5a']},
-    {'res_name':'LEU',
-    'nodes':[[1,2,7,8],[3,4,5,6]],
-    'names':['P2', 'SC2']},
-    {'res_name':'MET',
-    'nodes':[[1,2,7,8],[3,4,5,6]],
-    'names':['P2', 'C6']},
-    {'res_name':'PHE',
-    'nodes':[[1,2,10,11],[3,4],[5,7,9],[6,8]],
-    'names':['P2', 'SC4', 'TC5', 'TC5']},
-    {'res_name':'PRO',
-    'nodes':[[1,2,6,7],[3,4,5]],
-    'names':['SP2a', 'SC3']},
-    {'res_name':'SER',
-    'nodes':[[1,2,5,6],[3,4]],
-    'names':['P2', 'TP1']},
-    {'res_name':'THR',
-    'nodes':[[1,2,6,7],[3,4,5]],
-    'names':['P2', 'SP1']},
-    {'res_name':'TRP',
-    'nodes':[[1,2,13,14],[3,4],[5,9],[6,7],[8,11],[10,12]],
-    'names':['P2', 'TC4', 'TN6d', 'TC5', 'TC5', 'TC5']},
-    {'res_name':'VAL',
-    'nodes':[[1,2,3,4],[5,6,7]],
-    'names':['SP2', 'SC3']},
-    {'res_name':'ILE',
-    'nodes':[[1,2,7,8],[3,4,5,6]],
-    'names':['SC1', 'P5']},
-    {'res_name':'TYR',
-    'nodes':[[1,2,11,12],[3,4],[5,7],[6,8],[9,10]],
-    'names':['P2', 'TC4', 'TC5', 'TC5', 'TN6']},
-    {'res_name':'LYS',
-    'nodes':[[1,2,3,4],[5,6,7],[8,9]],
-    'names':['P2', 'SC3', 'SQ4p']}
-    ]
-
-# reading file
+# input file
 with open(f"{input_file}", 'r', encoding="utf-8") as f:
     lines = f.readlines()
+
+# dictionaries
+with open('res_dictionary.txt', 'r', encoding='utf-8') as f:
+    ref_dict = ast.literal_eval(f.read())
+
+with open('CG_dictionary.txt', 'r', encoding='utf-8') as f:
+    CG_dict = ast.literal_eval(f.read())
+
+
+# warning list
+warnings=[]
 
 # parsing
 atom_data=[]
@@ -304,19 +185,22 @@ if input_file.endswith('.mol2'): # parsing if mol2
             b_info=bonds_prase_mol2(line)
             bond_data.append(b_info)
 else:
-    print(f'File format for {input_file} not recognized')
+    warn=f'File format for {input_file} not recognized'
+    print(warn)
+    warnings.append(warn)
 
-warnings=[]
+# ________________________ graph mapping ________________________ 
 matches_in_total=[]
 for n in range(1,atom_data[-1]['res_id']+1): # for each residue
-
+    
+    graph_ref = nx.Graph() # to avoid error if first recidue is not in reference
     graph_res = nx.Graph()
-    res_atom_ids=[] # nodes created for each residue
+
+    res_atom_ids=[] # nodes for each residue
     res_bonds=[] # list of bonds inside each residue
     res_dict=[] # dictionaries of atoms inside each residue
     res_weights=[]
     res_names=[]
-    new_hydrogen_id=[]
 
     # filter atoms for each residue
     for a in atom_data:
@@ -334,8 +218,7 @@ for n in range(1,atom_data[-1]['res_id']+1): # for each residue
             res_names.append(a['element'])
             res_dict.append(a)
         
-
-    n_atoms=len(res_atom_ids)
+    n_atoms=len(res_atom_ids) # numbr of atoms in residue
 
     # finds bonds involved with atoms inside each residue
     for b in bond_data:
@@ -344,7 +227,9 @@ for n in range(1,atom_data[-1]['res_id']+1): # for each residue
     
     # if there are no atoms found in a residue
     if n_atoms==0:
-        print(f'res id {n} has no atoms')
+        warn=f'res id {n} has no atoms'
+        print(warn)
+        warnings.append(warn)
 
     # create graph of residue    
     if n_atoms != 0:
@@ -402,9 +287,7 @@ for n in range(1,atom_data[-1]['res_id']+1): # for each residue
         for u in u_matches:
             matches_in_total.append({'res_name':matched_res, 'dictionary':u, 'res_id':n})
 
-    
-    
-# matching of atom ids with CG ids
+# _____________________ matching with CG ids _____________________ 
 final_dict=[]
 id_CG=1 # initial id for the CG particle
 for m in matches_in_total:
@@ -420,12 +303,16 @@ for m in matches_in_total:
                                    'CG_name':name,'res_name':d_CG['res_name'], 'res_id':m['res_id']})
                 id_CG+=1
 
+
+# ________________________ Output files ________________________ 
+
 # write warnings file
 with open('warnings.txt', 'w') as f:
         for w in warnings:
             f.write(w + '\n')
 
-# write coarse grain beads files
-with open('CG_dictionary.txt', 'w') as f:
-    for d in final_dict:
-        f.write(d + '\n')
+# write coarse grain list of beads on a .txt file
+with open('final_dictionary.txt', 'w', encoding='utf-8') as f:
+    # sort_dicts=False keeps keys in the same order as written
+    # width=200 ensures one line per bead id
+    pprint.pprint(final_dict, f, sort_dicts=False, width=300)
