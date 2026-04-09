@@ -14,7 +14,7 @@ Created on Tue Feb 10 03:32:49 2026
 import networkx as nx
 
 # variables
-file_path='1AKI_topol.top'
+input_file='secretasa_aa.mol2'
 
 # parsing of input file (either .itp or .top)
 def parse_atoms(line):
@@ -35,6 +35,28 @@ def bonds_prase(line):
             'a_i': int(bond[0]),
             'a_j': int(bond[1])}
         return(bond_info)
+
+# parsing .mol2 files
+weight_dict={'H':1, 'C':12, 'N':14, 'O':16, 'S':32} # needed because mol2 files dont have atoms weight
+
+def parse_atoms_mol2(line):
+    atom=line.split()
+    atom_info = {
+        'id': int(atom[0]),
+        'element': atom[5][0],
+        'res_id': int(atom[6]),
+        'res_name': atom[7] if len(atom) > 6 else 'Unk',
+        'weight':weight_dict[atom[5][0]]}
+    return(atom_info)
+
+def bonds_prase_mol2(line):
+    bond=line.split()
+    bond_info = {
+        'id': int(bond[0]),
+        'a_i': int(bond[1]),
+        'a_j': int(bond[2]),
+        'bond_type' : int(bond[3])}
+    return(bond_info)
 
 # to determine non-overlapping (unique) matches
 def find_uniques_matches(matches_list, total_nodes, ignore_total_nodes=True):
@@ -238,30 +260,53 @@ CG_dict=[
     ]
 
 # reading file
-with open(f"{file_path}", 'r', encoding="utf-8") as f:
+with open(f"{input_file}", 'r', encoding="utf-8") as f:
     lines = f.readlines()
 
+# parsing
 atom_data=[]
 bond_data=[]
 section=None
-for line in lines:
-    line = line.strip() # eliminate space between lines
-    if line: # ignores empty lines
-        if line.startswith("[ "):
-            section = line
-            continue # this ignores section line
-        
-        # Atoms data prasing
-        if section == "[ atoms ]":
-            a_info=parse_atoms(line)
-            if a_info:
-                atom_data.append(a_info)
-        
-        if section == "[ bonds ]":
-            b_info=bonds_prase(line)
-            if b_info:
-                bond_data.append(b_info)
 
+if input_file.endswith('.top') or input_file.endswith('.itp'):
+    for line in lines:
+        line = line.strip() # eliminate space between lines
+        if line: # ignores empty lines
+            if line.startswith("[ "):
+                section = line
+                continue # this ignores section line
+            
+            # Atoms data prasing
+            if section == "[ atoms ]":
+                a_info=parse_atoms(line)
+                if a_info:
+                    atom_data.append(a_info)
+            
+            if section == "[ bonds ]":
+                b_info=bonds_prase(line)
+                if b_info:
+                    bond_data.append(b_info)
+
+if input_file.endswith('.mol2'): # parsing if mol2
+    for line in lines:
+        line = line.strip() # eliminate space between lines
+        if line.startswith("@<TRIPOS>"): # this ignores section line
+            section = line
+            continue
+
+        # Atoms data prasing
+        if section == "@<TRIPOS>ATOM":
+            a_info=parse_atoms_mol2(line)
+            atom_data.append(a_info)
+
+        if section == "@<TRIPOS>BOND":
+            bond=line.split()
+            b_info=bonds_prase_mol2(line)
+            bond_data.append(b_info)
+else:
+    print(f'File format for {input_file} not recognized')
+
+warnings=[]
 matches_in_total=[]
 for n in range(1,atom_data[-1]['res_id']+1): # for each residue
 
@@ -314,8 +359,10 @@ for n in range(1,atom_data[-1]['res_id']+1): # for each residue
                 matching=True
                 break  # Stop searching
         if not matching:
-            print(f'residue name {res_name} for res_id {n} was not found in reference dictionary')
-        
+            warn=f'Warning: residue name {res_name} for res_id {n} was not found in reference dictionary'
+            print(warn)
+            warnings.append(warn)
+
         # SubGraph
         matches_raw=[]
         ISMAGS = nx.isomorphism.ISMAGS(graph_res, graph_ref) # importa qué va primero
@@ -335,21 +382,28 @@ for n in range(1,atom_data[-1]['res_id']+1): # for each residue
         u_matches=find_uniques_matches(matches_raw, len(graph_res.nodes()))
 
         if len(u_matches) > 1:
-            print(f'Warning: {len(u_matches)} matches found for {res_name} {n}')
+            warn=f'Warning: {len(u_matches)} matches found for {res_name} {n}'
+            print(warn)
+            warnings.append(warn)
         if len(u_matches) == 0:
-            print(f'Warning: no matches found for {res_name} {n}')
+            warn=f'Warning: no matches found for {res_name} {n}'
+            print(warn)
+            warnings.append(warn)
         
         # For the terminal residue:
         if (n == atom_data[-1]['res_id']):
             if len(u_matches) > 0:
                 u_matches=[u_matches[0]] # selects only one match
-                print(f'Residue {res_name} {n} is terminal res, only first matching is used')
+                warn=f'Residue {res_name} {n} is terminal res, only first matching is used'
+                print(warn)
+                warnings.append(warn)
         
         # appends unique solutions found
         for u in u_matches:
             matches_in_total.append({'res_name':matched_res, 'dictionary':u, 'res_id':n})
 
-
+    
+    
 # matching of atom ids with CG ids
 final_dict=[]
 id_CG=1 # initial id for the CG particle
@@ -366,5 +420,12 @@ for m in matches_in_total:
                                    'CG_name':name,'res_name':d_CG['res_name'], 'res_id':m['res_id']})
                 id_CG+=1
 
-for d in final_dict:
-    print(d)
+# write warnings file
+with open('warnings.txt', 'w') as f:
+        for w in warnings:
+            f.write(w + '\n')
+
+# write coarse grain beads files
+with open('CG_dictionary.txt', 'w') as f:
+    for d in final_dict:
+        f.write(d + '\n')
