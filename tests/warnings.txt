@@ -1,0 +1,2 @@
+Warning: 2 matches found for LEU129 129
+Residue LEU129 129 is terminal res, only first matching is used

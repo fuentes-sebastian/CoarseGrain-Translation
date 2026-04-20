@@ -141,10 +141,10 @@ with open(f"{input_file}", 'r', encoding="utf-8") as f:
     lines = f.readlines()
 
 # dictionaries
-with open('res_dictionary.txt', 'r', encoding='utf-8') as f:
+with open('dictionaries/res_dictionary.txt', 'r', encoding='utf-8') as f:
     ref_dict = ast.literal_eval(f.read())
 
-with open('CG_dictionary.txt', 'r', encoding='utf-8') as f:
+with open('dictionaries/CG_dictionary.txt', 'r', encoding='utf-8') as f:
     CG_dict = ast.literal_eval(f.read())
 
 
