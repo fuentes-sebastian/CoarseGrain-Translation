@@ -28,12 +28,11 @@ Here is an example of a CG residue in the `CG_dictionary.txt`:
 
 `{'res_name': 'ARG', 'nodes': [[1, 2, 3, 4], [5, 6, 7], [8, 9, 10, 11]], 'names': ['P2', 'SC3', 'SQ3p']}`
 
-This indicates that ARG residues will contain 3 CG beads with names `['P2', 'SC3', 'SQ3p']` and those beads will contain the atoms `[[1, 2, 3, 4], [5, 6, 7], [8, 9, 10, 11]]`.
+This indicates that ARG residues will contain 3 CG beads with names `['P2', 'SC3', 'SQ3p']` and those beads will contain the atoms `[[1, 2, 3, 4], [5, 6, 7], [8, 9, 10, 11]]` of the reference dicitonary in `res_dictionary.txt`. The coarse grain dictionary can be assigned with only some atoms in the reference; for instance, in this example hydrogens are ignored.
 
 
 > [!IMPORTANT]
-> The nodes in the coarse grain dictionary must coincide with the nodes in the reference; this is the link between the all-atom model and the CG model. And the residue name must coincide with its name in the input_file
+> The nodes in the coarse grain dictionary must coincide with the nodes in the reference as this is the link between the all-atom model and the CG model. And the residue name must coincide with its name in the input_file
 >
-
 
 The script outputs a warning file with all the warnings found and a dictionary list with information for each coarse grained bead identified.
