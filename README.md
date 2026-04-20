@@ -20,9 +20,9 @@ This indicates that the 14th CG bead will: contain to the atoms `[91,92,93,94]` 
 
 ## Using modified residues
 
-Modified residues should be added to both the `res_dictionary.txt` and the `CG_dictionary.txt`, both on the [dictionaries/](https://github.com/fuentes-sebastian/CoarseGrain-Translation/tree/main/dictionaries) folder. The script `mol2_to_dict.py` can be used to create a reference dictionary from a .mol2 file; this script will generate a `res_dict.txt` with the generated dictionary and that dictionary can be pasted in the `res_dictionary.txt` file.
+Modified residues should be added to both the `res_dictionary.txt` and the `CG_dictionary.txt`, both on the [dictionaries/](https://github.com/fuentes-sebastian/CoarseGrain-Translation/tree/main/dictionaries) folder. The script `mol2_to_dict.py` can be used to create a reference dictionary from a .mol2 file of the modified residue; this script will generate a `res_dict.txt` with the new dictionary and that new dictionary can be pasted in the `res_dictionary.txt` file.
 
-The corresponding coarse grain information of the modified residue must be manually written in the `CG_dictionary.txt` file. 
+On the otherhand, the coarse grain information of the modified residue must be manually written in the `CG_dictionary.txt` file. 
 
 Here is an example of a CG residue in the `CG_dictionary.txt`: 
 
